@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">   
+    <link rel="shortcut icon" href="#"> 
+    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script>
+        var grad;
+        function show_value(x)
+        {
+            document.getElementById("slider_value").innerHTML=x;
+            grad = x;
+        }
+    </script>
+    
+    <title>Simulador</title>
+</head>
+<body>      
+
+    <div class="barraSup"></div>
+
+    <div class="datos">
+        <h2>Materia: FISICA</h2>
+        <P>Nombre: Texcucano Gallegos Brenda</P>
+        <p>Matrícula: 202059038</p>
+    </div>
+
+    <div class="gradows">
+        <img src="./imgs/grados.png" alt="grados">
+    </div>
+
+    <div class="rango">
+        <p class="grade">Grados</p>
+        <input class="slider" id="slid" type="range" min="0" max="90" value="0" step="1" onchange="show_value(this.value);">
+        <span id="slider_value" class="valor"></span>
+        <label class="m" for="masa">Masa(en kg): </label>
+        <input type="text" class="m" id="masa" name="masa" size="5">
+        <p class="gravity">Gravedad: 9.8m/s^2</p>
+        <button id="calc">Calcular</button>
+    </div>
+
+    <script type="module">
+
+        import * as THREE from "../three/three.module.js";
+        import { FBXLoader } from "../three/FBXLoader.js";   
+        import { GLTFLoader } from "../three/GLTFLoader.js";     
+
+        const clock = new THREE.Clock();
+
+        //Crear escena
+        var scene = new THREE.Scene();
+
+        //Añadir cámara
+        var wid = window.innerWidth;
+        var hei = window.innerHeight;
+        var camera = new THREE.OrthographicCamera(wid / -2, wid / 2, hei / 2, hei /-2, 1, 200);
+
+        //renderer
+        var renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        //Load background texture
+        const loader = new THREE.TextureLoader();
+        loader.load('./imgs/Fondiu.png' , function(texture)
+        {
+             scene.background = texture;  
+        });
+
+        //Añadir objetos        
+
+            //cuerda piñata
+        var geometryLine3 = new THREE.BoxGeometry(5, 100, 1);
+        var materialLine3 = new THREE.MeshBasicMaterial({color: 0xff0000});
+        var line3 = new THREE.Mesh(geometryLine3, materialLine3);        
+
+            //circulo central
+        var geometryCircle = new THREE.CircleGeometry(20, 32);
+        var materialCircle = new THREE.MeshBasicMaterial({color: 0x00ff00});
+
+        var circle = new THREE.Mesh(geometryCircle, materialCircle);                 
+
+            //linea arriba
+        var geometryLine1 = new THREE.BoxGeometry(5, 186, 1);
+        var materialLine1 = new THREE.MeshBasicMaterial({color: 0x000000});
+        var line1 = new THREE.Mesh(geometryLine1, materialLine1);
+        line1.position.y = 383;
+        line1.position.x = 1
+        line1.position.z = 50;
+        rotateObject(line1, 1, 0, 0);
+
+        line1.add(line3);
+        circle.position.y = -90;        
+
+        line3.position.y = circle.position.y - 50;
+        line3.position.x = circle.position.x;
+        line3.position.z = -1;                        
+
+        line1.add(circle);
+
+            //cuerda jalar
+        var geometryLine2 = new THREE.BoxGeometry(5, 450, 1);
+        var materialLine2 = new THREE.MeshBasicMaterial({color: 0x0000ff});
+        var line2 = new THREE.Mesh(geometryLine2, materialLine2);
+        line2.position.y = -317;
+        line2.position.x = 0;
+        line2.position.z = -2;
+
+        var halar = THREE.Math.degToRad(20);
+        rotarEnPunto(line2, new THREE.Vector3(0,-90,-2), new THREE.Vector3(0,0,1), halar);        
+
+        line1.add(line2);        
+        
+        var mixer = null;
+        var mixerS = null;
+
+        var anim;
+        var animS;
+
+        var spideyObj;
+
+        const joint1 = new THREE.Object3D;
+        joint1.position.y = -20;
+        joint1.position.x = 0;
+
+        var voltear = THREE.Math.degToRad(90);
+
+        const joint3 = new THREE.Object3D;
+        joint3.position.x = 0;
+        joint3.position.y = -350;
+
+            //spidey
+        var loaderSpidey = new FBXLoader();
+        loaderSpidey.load('./imgs/spidey.fbx', function (spider) {
+
+            scene.add(spider);
+            line2.add(spider);            
+            spider.rotation.y = -voltear;                                                
+
+            spider.position.x = joint3.position.x + 50;
+            spider.position.y = joint3.position.y;            
+
+            mixerS = new THREE.AnimationMixer(spider);
+
+            animS = mixerS.clipAction(spider.animations[0]);
+            animS.play();
+
+            spideyObj = spider;
+
+            animate();
+        });        
+        
+            //Piniata
+        var loaderPinata = new FBXLoader();
+        loaderPinata.load('../imgs/piniataA.fbx', function (pinata) {
+                        
+            scene.add(pinata);
+            line3.add(pinata);
+            pinata.position.x = joint2.position.x;
+            pinata.position.y = joint2.position.y;
+            pinata.position.z = joint2.position.z;
+            pinata.scale.setScalar(0.25);
+
+            mixer = new THREE.AnimationMixer(pinata);
+
+            console.log(pinata.animations);
+
+            anim = mixer.clipAction(pinata.animations[0]);
+            anim.play();
+            
+            animate();
+        });
+
+        const joint2 = new THREE.Object3D;
+        joint2.position.y = -74;
+        joint2.position.x = 0;
+        
+        circle.add(joint1);
+        line2.add(joint1);
+        line3.add(joint1);
+
+        scene.add(line1);
+        
+        camera.position.z = 100;        
+
+        const light = new THREE.DirectionalLight(0xffffff, 1)
+        light.position.set(2, 2, 5)
+        scene.add(light);
+
+        renderer.render(scene, camera);
+
+        var calculate = document.getElementById("calc");
+        var cont = 0;
+
+        var grades = 0
+        var grados1 = THREE.Math.degToRad(grades);
+        var grados2 = -grados1;
+        var cX = circle.position.x;
+        var cY = circle.position.y;
+        var pivoteP = new THREE.Vector3(cX, cY, -1);      
+        var i = 0; 
+
+        calculate.onclick = function() {
+
+            rotarEnPunto(line1, new THREE.Vector3(0, 472, 0), new THREE.Vector3(0,0,1), -grados1);
+            rotarEnPunto(line3, pivoteP, new THREE.Vector3(0,0,1), -grados2); 
+            rotarEnPunto(line2, new THREE.Vector3(0,-90,-2), new THREE.Vector3(0,0,1), -halar);
+
+            grades = document.getElementById("slider_value").innerHTML;
+
+            grados1 = THREE.Math.degToRad(grades);
+            grados2 = -grados1;
+
+            if(grades < 46){
+                halar = THREE.Math.degToRad(20);
+                rotarEnPunto(line2, new THREE.Vector3(0,-90,-2), new THREE.Vector3(0,0,1), halar);
+            } else {
+                halar = THREE.Math.degToRad(10);
+                rotarEnPunto(line2, new THREE.Vector3(0,-90,-2), new THREE.Vector3(0,0,1), halar);
+            }                        
+
+            rotarEnPunto(line1, new THREE.Vector3(0, 472, 0), new THREE.Vector3(0,0,1), grados1);
+            rotarEnPunto(line3, pivoteP, new THREE.Vector3(0,0,1), grados2);   
+            
+            var m = document.getElementById("masa").value;    
+            console.log(m);        
+            var g = 9.8;
+            var aux = (2 * (m * g)) * Math.cos(grados1);
+            var t = aux.toFixed(3);
+            document.getElementById("result").innerHTML = t;
+
+        }
+
+        // animacion
+        var animate = function () {
+            requestAnimationFrame(animate);            
+
+            const delta = clock.getDelta();
+            mixer.update(delta);        
+            mixerS.update(delta);   
+
+            renderer.render(scene, camera);
+        }
+
+
+        function rotarEnPunto(obj, point, axis, theta, pointIsWorld){
+            pointIsWorld = (pointIsWorld === undefined)? false : pointIsWorld;
+
+            if(pointIsWorld){
+                obj.parent.localToWorld(obj.position); // compensate for world coordinate
+            }
+
+            obj.position.sub(point); // remove the offset
+            obj.position.applyAxisAngle(axis, theta); // rotate the POSITION
+            obj.position.add(point); // re-add the offset
+
+            if(pointIsWorld){
+                obj.parent.worldToLocal(obj.position); // undo world coordinates compensation
+            }
+
+            obj.rotateOnAxis(axis, theta); // rotate the OBJECT
+        }
+
+        function rotateObject(object, degreeX=0, degreeY=0, degreeZ=0) {
+            object.rotateX(THREE.Math.degToRad(degreeX));
+            object.rotateY(THREE.Math.degToRad(degreeY));
+            object.rotateZ(THREE.Math.degToRad(degreeZ));
+        }
+
+    </script>
+
+    <div class="resultado">
+        <p>T = 2mg cos(α) = </p>
+        <span id="result" class="rrr"></span>
+        <span>N</span>
+    </div>
+</body>
+</html>
